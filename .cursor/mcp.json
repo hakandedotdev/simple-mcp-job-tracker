@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "job-tracker": {
+      "type": "stdio",
+      "command": "npm",
+      "args": ["run", "mcp"],
+      "env": {
+        "JOB_TRACKER_API_URL": "http://localhost:3000"
+      }
+    }
+  }
+}
