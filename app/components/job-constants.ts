@@ -44,6 +44,8 @@ export const WORK_TYPE_LABELS: Record<JobWorkType, string> = {
 
 export { JOB_WORK_TYPES };
 
+export const JOBS_PAGE_SIZE = 10;
+
 export const HIGHLIGHT_STATUSES: JobStatus[] = [
   "wishlist",
   "applied",

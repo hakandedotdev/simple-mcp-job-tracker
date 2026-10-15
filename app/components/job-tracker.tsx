@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AddJobDialog } from "@/app/components/add-job-dialog";
 import { EditJobDialog } from "@/app/components/edit-job-dialog";
+import { JOBS_PAGE_SIZE } from "@/app/components/job-constants";
 import { JobStats } from "@/app/components/job-stats";
-import { JobsTable } from "@/app/components/jobs-table";
+import { JobsTable, type StatusFilter } from "@/app/components/jobs-table";
 import {
   emptyJobForm,
   jobToFormState,
@@ -28,6 +29,47 @@ export function JobTracker() {
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [editForm, setEditForm] = useState<JobFormState>(emptyJobForm());
   const [submitting, setSubmitting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [page, setPage] = useState(1);
+
+  const filteredJobs = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+
+    return jobs.filter((job) => {
+      if (statusFilter !== "all" && job.status !== statusFilter) {
+        return false;
+      }
+
+      if (!query) {
+        return true;
+      }
+
+      return (
+        job.company.toLowerCase().includes(query) ||
+        job.role.toLowerCase().includes(query)
+      );
+    });
+  }, [jobs, searchQuery, statusFilter]);
+
+  const totalFiltered = filteredJobs.length;
+  const totalPages = Math.max(1, Math.ceil(totalFiltered / JOBS_PAGE_SIZE));
+  const effectivePage = Math.min(page, totalPages);
+
+  const paginatedJobs = useMemo(() => {
+    const start = (effectivePage - 1) * JOBS_PAGE_SIZE;
+    return filteredJobs.slice(start, start + JOBS_PAGE_SIZE);
+  }, [filteredJobs, effectivePage]);
+
+  function handleSearchQueryChange(value: string) {
+    setSearchQuery(value);
+    setPage(1);
+  }
+
+  function handleStatusFilterChange(value: StatusFilter) {
+    setStatusFilter(value);
+    setPage(1);
+  }
 
   const loadJobs = useCallback(async () => {
     setError(null);
@@ -235,8 +277,18 @@ export function JobTracker() {
       <JobStats jobs={jobs} />
 
       <JobsTable
-        jobs={jobs}
+        jobs={paginatedJobs}
+        totalJobCount={jobs.length}
+        totalFiltered={totalFiltered}
         loading={loading}
+        searchQuery={searchQuery}
+        onSearchQueryChange={handleSearchQueryChange}
+        statusFilter={statusFilter}
+        onStatusFilterChange={handleStatusFilterChange}
+        page={effectivePage}
+        totalPages={totalPages}
+        pageSize={JOBS_PAGE_SIZE}
+        onPageChange={setPage}
         onStatusChange={(jobId, status) =>
           void handleStatusChange(jobId, status)
         }
